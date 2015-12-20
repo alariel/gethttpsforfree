@@ -41,6 +41,16 @@ var //CA = "https://acme-staging.api.letsencrypt.org",
              //   ...
              // }
 
+// debug console output on failure
+function failConsole(){
+    if(window.location.search.indexOf("debug") !== -1 && console){
+        console.log("ACCOUNT_EMAIL", ACCOUNT_EMAIL);
+        console.log("ACCOUNT_PUBKEY", JSON.stringify(ACCOUNT_PUBKEY));
+        console.log("CSR", JSON.stringify(CSR));
+        console.log("DOMAINS", JSON.stringify(DOMAINS));
+    }
+}
+
 // show warning if no webcrypto digest
 window.crypto = window.crypto || window.msCrypto; //for IE11
 if(window.crypto && window.crypto.webkitSubtle){
@@ -138,6 +148,7 @@ function getNonce(callback){
 function validateAccount(e){
     var status = document.getElementById("validate_account_status");
     function fail(msg){
+        failConsole();
         ACCOUNT_EMAIL = undefined;
         ACCOUNT_PUBKEY = undefined;
         status.style.display = "inline";
@@ -200,6 +211,9 @@ function validateAccount(e){
 
     // calculate thumbprint
     sha256(new Uint8Array(jwk_bytes), function(hash, err){
+        if(err){
+            return fail("Thumbprint failed: " + err.message);
+        }
 
         // update the globals
         ACCOUNT_EMAIL = email;
@@ -227,6 +241,7 @@ document.getElementById("validate_account").addEventListener("click", validateAc
 function validateCSR(e){
     var status = document.getElementById("validate_csr_status");
     function fail(msg){
+        failConsole();
         CSR = undefined;
         DOMAINS = undefined;
         status.style.display = "inline";
@@ -302,6 +317,9 @@ function validateCSR(e){
                                 var sans = xtns[i].sub[1].sub[j].sub[k].sub[1].sub[0].sub;
                                 for(var s = 0; s < sans.length; s++){
                                     var sanRaw = sans[s];
+                                    var tag = sanRaw.tag.tagNumber;
+                                    if(tag !== 2)
+                                        continue; // ignore any other subjectAltName type than dNSName (2)
                                     var sanStart = sanRaw.header + sanRaw.stream.pos;
                                     var sanEnd = sanRaw.length + sanRaw.stream.pos + sanRaw.header;
                                     domains.push(sanRaw.stream.parseStringUTF(sanStart, sanEnd));
@@ -453,6 +471,7 @@ document.getElementById("validate_csr").addEventListener("click", validateCSR);
 function validateInitialSigs(e){
     var status = document.getElementById("validate_initial_sigs_status");
     function fail(msg, fail_all){
+        failConsole();
         if(fail_all){
             ACCOUNT_EMAIL = undefined;
             ACCOUNT_PUBKEY = undefined;
@@ -660,6 +679,7 @@ function validateInitialSigs(e){
 
     // register the account
     status.innerHTML = "registering...";
+    document.getElementById("challenge_domains").innerHTML = "";
     var account_xhr = new XMLHttpRequest();
     account_xhr.onreadystatechange = function(){
         if(account_xhr.readyState === 4){
@@ -693,6 +713,7 @@ function confirmDomainCheckIsRunning(e){
     // set the failure state
     var status = e.target.parentNode.querySelector("span");
     function fail(msg, fail_all){
+        failConsole();
         if(fail_all){
             ACCOUNT_EMAIL = undefined;
             ACCOUNT_PUBKEY = undefined;
@@ -794,6 +815,7 @@ function checkAllDomains(){
     // set status and failure modes
     var status = document.getElementById("step5_pending");
     function fail(msg, fail_all){
+        failConsole();
         if(fail_all){
             ACCOUNT_EMAIL = undefined;
             ACCOUNT_PUBKEY = undefined;

@@ -340,6 +340,7 @@ openssl req -new -sha256 -key domain.key -subj "/" \
                                 Create the ".well-known/acme-challenge/" directory
                                 in your webserver's static file path:<br/>
                                 <pre class="wwwdir">mkdir -p /path/to/www/.well-known/acme-challenge/</pre>
+                            </li>
                             <li>
                                 Add the static folder to your webserver's config
                                 (if you haven't already):<br/>
@@ -389,7 +390,7 @@ openssl req -new -sha256 -key domain.key -subj "/" \
         <div class="field">
             <a id="howto_install" class="help" href="#">(how do I install this?)</a>
             <div id="howto_install_content" class="help-content" style="display:none;">
-                How to install https on nginx or apache:<br/>
+                Nginx installation instructions:<br/>
                 <ol>
                     <li>
                         Copy and paste both the below domain certificate and the below
@@ -412,7 +413,6 @@ scp dhparam.pem root@foo.com:/etc/ssl/certs/dhparam.pem
                     </li>
                     <li>
                         Update your webserver config to use https (examples below).<br/>
-                        Nginx:
 <pre>
 server {
     listen 443;
@@ -433,19 +433,41 @@ server {
     }
 }
 </pre>
-                        Apache:
+                    </li>
+                </ol>
+                Apache installation instructions:<br/>
+                <ol>
+                    <li>
+                        Copy and paste the below domain certificate into file "domain.crt".
+                    </li>
+                    <li>
+                        Copy and paste the below intermediate certificate into file "intermediate.pem".
+                    </li>
+                    <li>
+                        Copy "domain.crt" and "intermediate.pem" to /etc/ssl/certs/.<br/>
+                        <pre>
+scp domain.crt root@foo.com:/etc/ssl/certs/domain.crt
+scp intermediate.pem root@foo.com:/etc/ssl/certs/intermediate.pem
+</pre>
+                    </li>
+                    <li>
+                        Copy "domain.key" /etc/ssl/private/.<br/>
+                        <code>scp domain.key root@foo.com:/etc/ssl/private/domain.key</code><br/>
+                    </li>
+                    <li>
+                        Update your webserver config to use https (examples below).<br/>
 <pre>
 &lt;VirtualHost _default_:443&gt;
         ServerName foo.com:443
-        ServerAlias www.foo.com:443
+        ServerAlias www.foo.com
         DocumentRoot /var/www/foo.com/html
         SSLEngine on
-        SSLCertificateFile    /etc/ssl/certs/chained.pem
+        SSLCertificateFile    /etc/ssl/certs/domain.crt
         SSLCertificateKeyFile /etc/ssl/private/domain.key
+        SSLCertificateChainFile /etc/ssl/certs/intermediate.pem
         SSLProtocol all -SSLv2 -SSLv3
         SSlCipherSuite ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA;
         SSLHonorCipherOrder on
-        SSLOpenSSLConfCmd DHParameters "/etc/ssl/certs/dhparam.pem"
         &lt;Directory /var/www/foo.com/html&gt;
                 Options Indexes FollowSymLinks MultiViews
                 AllowOverride All
